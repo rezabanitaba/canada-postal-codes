@@ -1,0 +1,429 @@
+# Build a Production-Quality NPM Package for Canadian Postal Codes
+
+## Goal
+
+Build a modern, TypeScript-first npm package that provides **fast offline lookups for Canadian postal codes**.
+
+The package should be designed as a high-quality open-source library with excellent performance, zero runtime dependencies, and a clean developer experience.
+
+---
+
+# IMPORTANT
+
+**Do NOT inspect the entire CSV manually.**
+
+The csv file name is CanadianPostalCodes202403.csv.
+
+The dataset is approximately:
+
+* ~900,000 rows
+* ~50 MB
+
+Only inspect the first few lines (e.g. `head`) to infer the schema.
+
+If transformation is needed:
+
+* use Python
+* stream the CSV
+* never load the whole CSV into memory unless necessary
+* generate optimized artifacts automatically
+
+The CSV should be treated purely as a source dataset.
+
+---
+
+# Assumptions
+
+Assume the CSV looks roughly like:
+
+```csv
+POSTAL_CODE,CITY,PROVINCE_ABBR,TIME_ZONE,LATITUDE,LONGITUDE
+M4C 1S9,TORONTO,ON,5,43.688438,-79.307762
+...
+```
+
+The build system should automatically adapt if additional columns exist.
+
+---
+
+# Tech Stack
+
+Use:
+
+* TypeScript
+* Node.js
+* Yarn
+* tsup (preferred)
+* Vitest
+* ESLint
+* Prettier
+
+No runtime dependencies unless absolutely necessary.
+
+Dev dependencies are fine.
+
+---
+
+# Package Name
+
+Use
+
+```
+canada-postal-codes
+```
+
+---
+
+# Public API
+
+Implement:
+
+```ts
+lookup(postalCode)
+
+exists(postalCode)
+
+normalize(postalCode)
+
+format(postalCode)
+
+searchByCity(city)
+
+searchByProvince(province)
+
+distance(postalA, postalB)
+
+nearby(latitude, longitude, radiusKm)
+```
+
+---
+
+# lookup()
+
+Example
+
+```ts
+lookup("V6B1A1")
+```
+
+returns
+
+```ts
+{
+    postalCode: "V6B 1A1",
+    city: "VANCOUVER",
+    province: "BC",
+    latitude: ...,
+    longitude: ...,
+    timezone: ...
+}
+```
+
+---
+
+# normalize()
+
+Accept:
+
+```
+V6B1A1
+v6b1a1
+v6b 1a1
+```
+
+Always return
+
+```
+V6B1A1
+```
+
+Internally every lookup should use the normalized representation.
+
+---
+
+# format()
+
+Returns
+
+```
+V6B 1A1
+```
+
+---
+
+# exists()
+
+Returns boolean.
+
+---
+
+# searchByCity()
+
+Returns every postal code belonging to a city.
+
+Case insensitive.
+
+---
+
+# searchByProvince()
+
+Returns every postal code for a province.
+
+---
+
+# distance()
+
+Compute the distance between two postal codes using the Haversine formula.
+
+Return kilometers.
+
+---
+
+# nearby()
+
+Input
+
+```
+latitude
+longitude
+radiusKm
+```
+
+Return every postal code inside the radius.
+
+Use a spatial index if appropriate.
+
+If the implementation complexity outweighs the benefit, begin with a simple implementation and clearly isolate it behind an interface so a KD-tree or R-tree can be added later without breaking the API.
+
+---
+
+# Data Pipeline
+
+The CSV should NEVER be read at runtime.
+
+Instead:
+
+Create a build script:
+
+```
+scripts/build-data.py
+```
+
+or
+
+```
+scripts/build-data.ts
+```
+
+Python is preferred.
+
+The script should stream the CSV once and generate optimized artifacts.
+
+---
+
+# Generated Data
+
+Instead of shipping the CSV directly, generate:
+
+```
+dist/data/postal-code-map.json
+
+dist/data/city-index.json
+
+dist/data/province-index.json
+```
+
+or another structure that is demonstrably smaller and faster.
+
+You are free to choose a superior structure if appropriate.
+
+The source CSV should not be required at runtime.
+
+---
+
+# Data Optimization
+
+Optimize aggressively.
+
+Examples:
+
+* remove duplicated strings
+* normalize postal codes
+* compress repeated province names
+* avoid unnecessary whitespace
+* avoid repeated object keys
+* use compact arrays internally if beneficial
+
+The goal is minimizing package size while keeping lookup speed extremely fast.
+
+---
+
+# Runtime
+
+On first import:
+
+Load the generated optimized data.
+
+Create Maps:
+
+```
+Map<postalCode, Record>
+
+Map<city, postalCodes[]>
+
+Map<province, postalCodes[]>
+```
+
+Lookups should be O(1).
+
+---
+
+# TypeScript
+
+Export proper interfaces.
+
+Example
+
+```ts
+interface PostalCodeRecord {
+    postalCode: string;
+    city: string;
+    province: string;
+    latitude: number;
+    longitude: number;
+    timezone: number;
+}
+```
+
+Everything should be fully typed.
+
+---
+
+# Tests
+
+Create comprehensive tests for:
+
+lookup()
+
+normalize()
+
+exists()
+
+format()
+
+city search
+
+province search
+
+distance()
+
+nearby()
+
+invalid postal codes
+
+lowercase input
+
+spacing variations
+
+---
+
+# Performance
+
+Add benchmarks.
+
+Measure:
+
+* lookup speed
+* startup time
+* memory usage
+
+Aim for sub-millisecond lookups after initialization.
+
+---
+
+# Documentation
+
+Write a professional README including:
+
+Installation
+
+Examples
+
+API reference
+
+Performance notes
+
+Dataset generation
+
+Contributing
+
+License
+
+---
+
+# CI
+
+Configure GitHub Actions.
+
+Run:
+
+* lint
+* tests
+* build
+
+on every pull request.
+
+---
+
+# Nice-to-Have Features
+
+If time permits, also implement:
+
+```ts
+random()
+
+nearest(postalCode)
+
+boundingBox(minLat, minLng, maxLat, maxLng)
+```
+
+without compromising API simplicity.
+
+---
+
+# Repository Structure
+
+A clean structure similar to:
+
+```
+src/
+
+scripts/
+
+data/
+
+generated/
+
+tests/
+
+README.md
+
+package.json
+```
+
+---
+
+# Code Quality
+
+Prioritize:
+
+* readability
+* maintainability
+* excellent TypeScript
+* minimal runtime allocations
+* strong documentation
+* modular architecture
+
+Avoid premature optimization unless it provides measurable improvements.
+
+Whenever there are multiple reasonable implementation choices, prefer the one that results in a clean, stable public API and the best long-term developer experience.

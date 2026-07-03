@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "recordCount": 899779,
+  "recordSize": 18,
+  "recordFormat": "<6sBbHff",
+  "fields": [
+    "postalCode",
+    "provinceIndex",
+    "timezone",
+    "cityIndex",
+    "latitude",
+    "longitude"
+  ],
+  "provinceCount": 13,
+  "cityCount": 6969,
+  "sourceFile": "CanadianPostalCodes202403.csv",
+  "sourceRowCount": 900686,
+  "duplicatesResolved": 905,
+  "skippedInvalidRows": 2,
+  "generatedAt": "2026-07-03T20:39:07Z"
+}
