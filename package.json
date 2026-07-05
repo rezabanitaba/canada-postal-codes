@@ -64,9 +64,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-org/canada-postal-codes.git"
+    "url": "git+https://github.com/rezabanitaba/canada-postal-codes.git"
   },
-  "author": "",
+  "homepage": "https://github.com/rezabanitaba/canada-postal-codes#readme",
+  "bugs": {
+    "url": "https://github.com/rezabanitaba/canada-postal-codes/issues"
+  },
+  "author": "Reza Banitaba <ahmadreza.banitaba@gmail.com>",
   "publishConfig": {
     "access": "public"
   }
