@@ -8,6 +8,11 @@ Fast, offline, zero-dependency lookups for Canadian postal codes.
 - **Fully typed.** Written in TypeScript, ships its own `.d.ts` declarations.
 - **Dual ESM/CJS** build via [tsup](https://tsup.egoist.dev/).
 
+> 📌 **Scope in one line:** this is a postal-**geography toolkit** — validation, lookup, and
+> proximity math over postal codes — **not** a street-address geocoder. Coordinates are
+> **approximate area centroids**, not building locations. Read
+> [📍 Coordinate accuracy](#-coordinate-accuracy) before you rely on the lat/lng for anything.
+
 ```ts
 import { lookup } from "canada-postal-codes";
 
@@ -66,10 +71,66 @@ reverseLookup(49.2827, -123.1207); // NearbyResult — the closest postal code t
 random(); // PostalCodeRecord — a random record, useful for tests/demos
 ```
 
+## ✅ What it does / 🚫 What it doesn't do
+
+**✅ Good fit for:**
+
+- ✅ **Validation** — is this a real postal code? (`exists`)
+- ✅ **Enrichment** — resolve a code to its city, province, and timezone (`lookup`)
+- ✅ **Normalizing & formatting** user input (`normalize`, `format`)
+- ✅ **Search** — every code in a city or province (`searchByCity`, `searchByProvince`)
+- ✅ **Proximity & distance math** — how far apart, what's nearby, what's in this box, what's
+  the closest code (`distance`, `nearby`, `boundingBox`, `nearest`)
+- ✅ **Approximate reverse lookup** — coordinate → nearest postal code (`reverseLookup`)
+- ✅ **Regional aggregation & analytics** — heatmaps, territory/market analysis, binning
+  customers into areas
+- ✅ **Offline / air-gapped / serverless** use — deterministic, no API key, no rate limit,
+  no network call on your hot path, nothing leaves the machine
+
+**🚫 Not the right tool for:**
+
+- 🚫 **Rooftop / address-level geocoding.** It will **not** pinpoint a specific building.
+  See [📍 Coordinate accuracy](#-coordinate-accuracy).
+- 🚫 **Street address → coordinates.** It only knows _postal codes_, not street addresses.
+  For "123 Main St → lat/lng" you want a geocoder (Geocodio, Google, PCCF+).
+- 🚫 **Authoritative "this exact coordinate belongs to this code" boundary mapping.**
+  `reverseLookup` is a nearest-centroid guess, not a polygon lookup.
+- 🚫 **Turn-by-turn dispatch to an exact door.** Centroids can sit a few hundred meters from
+  the actual address.
+- 🚫 **Guaranteeing a code is _currently active / deliverable._** Presence in the dataset means
+  "this code existed in the source snapshot," not "mail is deliverable here today." Postal
+  codes are added and retired over time.
+- 🚫 **Complete PO Box / business-code coverage.** Public datasets are inconsistent here.
+
+## 📍 Coordinate accuracy
+
+**Read this before you trust the lat/lng.** The short version: **a Canadian postal code is an
+_area_, not a point.** The `latitude`/`longitude` this package returns is a single
+**representative centroid** for that area — not the location of any specific building.
+
+**What that means in practice:**
+
+- A full 6-character code (FSA + LDU) covers a **block or a cluster of addresses**. In dense
+  urban cores it sometimes maps to a **single building** (many downtown highrises get their own
+  code) — but often it doesn't, and the stored point is the _average_ of the area.
+- Urban accuracy is typically **within a few hundred meters**. This isn't a limitation of _this_
+  dataset specifically — even the authoritative, Canada Post–licensed commercial data is only
+  the approximate center of each code's delivery area. Building ("rooftop") precision is a
+  fundamentally different product built from full street-address data.
+- So a `lookup()` coordinate landing on a **neighbouring building** to the one you expected is
+  **expected behaviour, not a bug.** As long as it's in the right code's area, it's doing its job.
+
+> ℹ️ Because the source is a **public dataset**, a small number of records may have coarse or
+> occasionally off coordinates. Treat the lat/lng as _approximate_ everywhere, and don't build
+> anything safety- or dispatch-critical on top of a single centroid.
+
 ## API reference
 
 All lookups normalize their input, so casing and spacing never matter:
 `"V6B1A1"`, `"v6b1a1"`, and `"v6b 1a1"` are all equivalent.
+
+> 📍 Every function below that returns coordinates returns **approximate area centroids** — see
+> [Coordinate accuracy](#-coordinate-accuracy).
 
 ### `lookup(postalCode: string): PostalCodeRecord | null`
 
@@ -106,6 +167,8 @@ Every record for a province, addressed by its two-letter abbreviation
 Great-circle distance between two postal codes, in kilometers, via the
 [Haversine formula](https://en.wikipedia.org/wiki/Haversine_formula). Throws
 `PostalCodeNotFoundError` if either postal code isn't in the dataset.
+Computed between the two codes' centroids, so treat it as approximate at
+short ranges.
 
 ### `nearby(latitude: number, longitude: number, radiusKm: number): NearbyResult[]`
 
@@ -127,12 +190,13 @@ The closest postal code to a coordinate. Returns `null` only on a
 near-empty dataset.
 
 > ⚠️ **Disclaimer:** this is a nearest-neighbor search over postal code
-> centroids, not an authoritative "this coordinate belongs to this code"
+> **centroids**, not an authoritative "this coordinate belongs to this code"
 > mapping. Centroids are approximate and adjacent postal codes can sit
 > meters apart, so `reverseLookup` may return a different (but genuinely
-> closer) postal code than the one you expected for a given address. If
-> you need a specific postal code, use `lookup()` directly instead of
-> reverse-geocoding for it.
+> closer) postal code than the one you expected for a given address. If you
+> already have a postal code, use `lookup()` directly rather than
+> round-tripping through coordinates. See
+> [📍 Coordinate accuracy](#-coordinate-accuracy) for the full picture.
 
 ### `random(): PostalCodeRecord`
 
@@ -145,8 +209,8 @@ interface PostalCodeRecord {
   postalCode: string; // "V6B 1A1"
   city: string; // "VANCOUVER"
   province: string; // "BC"
-  latitude: number;
-  longitude: number;
+  latitude: number; // ⚠️ approximate area centroid, not a building location
+  longitude: number; // ⚠️ approximate area centroid, not a building location
   timezone: number; // raw UTC offset in hours, as sourced
 }
 
@@ -225,6 +289,11 @@ you're regenerating the dataset from a newer Canada Post export.
 If Canada Post's data format ever gains extra columns, `build-data.py`
 only requires `POSTAL_CODE`, `CITY`, `PROVINCE_ABBR`, `LATITUDE`, and
 `LONGITUDE` to be present — it adapts to the rest.
+
+> ℹ️ **On coordinate quality:** the coordinates are only as precise as the source dataset's
+> centroids. If you regenerate from a newer or higher-quality export, consider adding a
+> build-time sanity pass (e.g. dropping or flagging any row whose coordinates fall outside a
+> Canada bounding box) to catch the occasional bad record before it ships.
 
 ## Development
 

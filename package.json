@@ -1,6 +1,6 @@
 {
   "name": "canada-postal-codes",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Fast, offline, zero-dependency lookups for Canadian postal codes.",
   "keywords": [
     "canada",
