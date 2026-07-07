@@ -126,6 +126,14 @@ The closest _other_ postal code to the given one. Throws
 The closest postal code to a coordinate. Returns `null` only on a
 near-empty dataset.
 
+> ⚠️ **Disclaimer:** this is a nearest-neighbor search over postal code
+> centroids, not an authoritative "this coordinate belongs to this code"
+> mapping. Centroids are approximate and adjacent postal codes can sit
+> meters apart, so `reverseLookup` may return a different (but genuinely
+> closer) postal code than the one you expected for a given address. If
+> you need a specific postal code, use `lookup()` directly instead of
+> reverse-geocoding for it.
+
 ### `random(): PostalCodeRecord`
 
 A random record. Handy for tests, demos, and seed data.
