@@ -112,3 +112,24 @@ export function nearest(postalCode: string): NearbyResult | null {
   }
   return null;
 }
+
+/**
+ * Finds the closest postal code to a coordinate.
+ *
+ * @returns The nearest record (annotated with `distanceKm`), or `null` if no
+ * postal code could be found (only possible on a near-empty dataset).
+ *
+ * @example
+ * reverseLookup(49.2827, -123.1207);
+ * // { postalCode: "V6B 1A1", city: "VANCOUVER", province: "BC", ..., distanceKm: 0.04 }
+ */
+export function reverseLookup(latitude: number, longitude: number): NearbyResult | null {
+  const maxRadiusKm = 2500; // comfortably spans the width of Canada
+  for (let radiusKm = 5; radiusKm <= maxRadiusKm; radiusKm *= 2) {
+    const candidates = nearby(latitude, longitude, radiusKm);
+    if (candidates.length > 0) {
+      return candidates[0]!;
+    }
+  }
+  return null;
+}

@@ -44,6 +44,7 @@ import {
   nearby,
   boundingBox,
   nearest,
+  reverseLookup,
   random,
 } from "canada-postal-codes";
 
@@ -61,6 +62,7 @@ nearby(49.2827, -123.1207, 5); // NearbyResult[] — everything within 5km, near
 boundingBox(49.2, -123.2, 49.35, -123.0); // PostalCodeRecord[] — everything inside the box
 
 nearest("V6B1A1"); // NearbyResult — the closest other postal code
+reverseLookup(49.2827, -123.1207); // NearbyResult — the closest postal code to a coordinate
 random(); // PostalCodeRecord — a random record, useful for tests/demos
 ```
 
@@ -118,6 +120,11 @@ Every record inside an inclusive lat/lng bounding box.
 
 The closest _other_ postal code to the given one. Throws
 `PostalCodeNotFoundError` if `postalCode` isn't in the dataset.
+
+### `reverseLookup(latitude: number, longitude: number): NearbyResult | null`
+
+The closest postal code to a coordinate. Returns `null` only on a
+near-empty dataset.
 
 ### `random(): PostalCodeRecord`
 
